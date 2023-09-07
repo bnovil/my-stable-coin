@@ -1,5 +1,5 @@
 {
-    "solidity.packageDefaultDependenciesContractsDirectory": "src",
-    "solidity.packageDefaultDependenciesDirectory": "lib"
-  }
-  
+  "solidity.packageDefaultDependenciesContractsDirectory": "src",
+  "solidity.packageDefaultDependenciesDirectory": "lib",
+  "explorer.autoReveal": false
+}

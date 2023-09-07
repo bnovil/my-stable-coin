@@ -13,7 +13,7 @@ contract StableCoinEngine is ReentrancyGuard {
     // errors
     error StableCoinEngine__TransferFailed();
     error StableCoinEngine__MintFailed();
-    error StatbleCoinEngine__NeedsMoreThanZero();
+    error StableCoinEngine__NeedsMoreThanZero();
     error StableCoinEngine__TokenNotAllowed(address token);
     error StableCoinEngine__BreaksHealthFactor(uint256 healthFactor);
     error StableCoinEngine__HealthFactorOk();
@@ -34,7 +34,7 @@ contract StableCoinEngine is ReentrancyGuard {
     // modifier
     modifier moreThanZero(uint256 amount) {
         if (amount == 0) {
-            revert StatbleCoinEngine__NeedsMoreThanZero();
+            revert StableCoinEngine__NeedsMoreThanZero();
         }
         _;
     }
@@ -76,6 +76,15 @@ contract StableCoinEngine is ReentrancyGuard {
         moreThanZero(amountCollateral)
     {
         _burnMsc(amountMscToBurn, msg.sender, msg.sender);
+        _redeemCollateral(tokenCollateralAddress, amountCollateral, msg.sender, msg.sender);
+        revertIfHealthFactorIsBroken(msg.sender);
+    }
+
+    function redeemCollateral(address tokenCollateralAddress, uint256 amountCollateral)
+        external
+        moreThanZero(amountCollateral)
+        nonReentrant
+    {
         _redeemCollateral(tokenCollateralAddress, amountCollateral, msg.sender, msg.sender);
         revertIfHealthFactorIsBroken(msg.sender);
     }
@@ -207,5 +216,68 @@ contract StableCoinEngine is ReentrancyGuard {
         if (totalMscMinted == 0) return type(uint256).max;
         uint256 collateralAdjustedForThreshold = (collateralValueInUsd * LIQUIDATION_THRESHOLD) / 100;
         return (collateralAdjustedForThreshold * 1e18) / totalMscMinted;
+    }
+
+    function calculateHealthFactor(uint256 totalDscMinted, uint256 collateralValueInUsd)
+        external
+        pure
+        returns (uint256)
+    {
+        return _calculateHealthFactor(totalDscMinted, collateralValueInUsd);
+    }
+
+    function getAccountInformation(address user)
+        external
+        view
+        returns (uint256 totalDscMinted, uint256 collateralValueInUsd)
+    {
+        return _getAccountInformation(user);
+    }
+
+    function getUsdValue(
+        address token,
+        uint256 amount // in WEI
+    ) external view returns (uint256) {
+        return _getUsdValue(token, amount);
+    }
+
+    function getCollateralBalanceOfUser(address user, address token) external view returns (uint256) {
+        return s_collateralDeposit[user][token];
+    }
+
+    function getPrecision() external pure returns (uint256) {
+        return PRECISION;
+    }
+
+    function getAdditionalFeedPrecision() external pure returns (uint256) {
+        return ADDITIONAL_FEED_PRECISION;
+    }
+
+    function getLiquidationThreshold() external pure returns (uint256) {
+        return LIQUIDATION_THRESHOLD;
+    }
+
+    function getLiquidationBonus() external pure returns (uint256) {
+        return LIQUIDATION_BONUS;
+    }
+
+    function getMinHealthFactor() external pure returns (uint256) {
+        return MIN_HEALTH_FACTOR;
+    }
+
+    function getCollateralTokens() external view returns (address[] memory) {
+        return s_collateralTokens;
+    }
+
+    function getMsc() external view returns (address) {
+        return address(i_msc);
+    }
+
+    function getCollateralTokenPriceFeed(address token) external view returns (address) {
+        return s_priceFeeds[token];
+    }
+
+    function getHealthFactor(address user) external view returns (uint256) {
+        return _healthFactor(user);
     }
 }
